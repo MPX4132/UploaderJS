@@ -1,0 +1,20 @@
+.uploader {
+	border-radius: 10px;
+	border: 2px dashed #CCC;
+	margin: 14px;
+	overflow: hidden;
+}
+
+.uploader > h1 {
+	color: lightgray;
+	text-align: center;
+	margin: 36px;
+}
+
+.uploader > table {
+	margin: 0px;
+}
+
+.uploader > table td {
+	font-size: 22px;
+}
