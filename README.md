@@ -1,11 +1,6 @@
 # UploaderJS
 Uploader is a jQuery plugin, occupying the jQuery.uploader namespace, and relies on the Twitter Bootstrap framework for styling puroposes. The plugin attempts to simplify having a file upload interface by having a minimally, non-intrusive, drag and drop interface.
 
-Uploader is a jQuery plugin, occupying the jQuery.uploader namespace,
-and relies on the Twitter Bootstrap framework for styling puroposes.
-The plugin attempts to simplify having a file upload interface by having
-a minimally, non-intrusive, drag and drop interface.
-
 
 NOTE: All other files in this directory are part of the demo.
 NOTE: Your web server needs to have file uploads enabled for the demo to work!
