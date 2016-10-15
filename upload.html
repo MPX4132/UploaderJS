@@ -24,7 +24,7 @@
 	</head>
 	<body>
 		<div class="uploader">
-			<table class="table table-responsive table-striped">
+			<table class="table table-striped">
 				<thead>
 					<tr><th>File Name</th></tr>
 				</thead>
@@ -34,11 +34,11 @@
 							<td>
 								<div class="input-group">
 									<span class="input-group-addon">
-										<span class="upld-indicator glyphicon glyphicon-chevron-up"></span>
+										<span class="glyphicon glyphicon-chevron-up" data-upld-indicator></span>
 									</span>
-									<input type="text" class="upld-filename form-control" aria-label="file-control">
+									<input type="text" class="form-control" aria-label="file-control" data-upld-filename>
 									<div class="input-group-btn">
-										<button type="button" class="upld-dismiss btn btn-warning"><span class="glyphicon glyphicon-trash"></span></button>
+										<button type="button" class="btn btn-warning" data-upld-dismiss><span class="glyphicon glyphicon-trash"></span></button>
 									</div>
 								</div>
 							</td>
@@ -46,7 +46,7 @@
 					</template>
 					<tr>
 						<td>
-							<button class="upld-submit btn btn-success btn-block">
+							<button class="btn btn-success btn-block" data-upld-submit>
 								<span class="glyphicon glyphicon-upload pull-left"></span> Upload Files <span class="glyphicon glyphicon-upload pull-right"></span>
 							</button>
 						</td>
