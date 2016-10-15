@@ -78,7 +78,7 @@ jQuery.fn.uploader = function(preprocessor, proprocessor) {
 				});
 			} else {
 				$upldTableRowIndicator.removeClass("glyphicon-chevron-up").addClass("glyphicon-repeat");
-				proprocessor(false, formData, $upldTableRowFilename, $upldTableRowGroup, $(row))
+				if (proprocessor) proprocessor(false, formData, $upldTableRowFilename, $upldTableRowGroup, $(row));
 			}
 		});
 		return false; // Stop propagation
