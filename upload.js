@@ -32,7 +32,6 @@ jQuery.fn.uploader = function(preprocessor, proprocessor) {
 		$upldTableBody.children().each(function(i, row) {
 			if (!$(row).data("file")) return; // If no file, skip.
 			
-			//var $upldTable = $(row).closest("table");
 			var $upldTableRowIndicator = $(row).find("span[data-upld-indicator]");
 			var $upldTableRowDismiss = $(row).find("button[data-upld-dismiss]");
 			var $upldTableRowDismissIndicator = $upldTableRowDismiss.find("span.glyphicon");
@@ -93,10 +92,6 @@ jQuery.fn.uploader = function(preprocessor, proprocessor) {
 		if(!event.originalEvent.dataTransfer.files.length) return;
 
 		var $upldFiles = $(event.originalEvent.dataTransfer.files);
-		//var $upldTable = $(this).find("table");
-        //var $upldBody = $upldTable.find("tbody");
-        //var $upldRowTemplate = $upldBody.find("template");
-        //var $upldSubmit = $upldBody.find("button.upld-submit");
         var $upldTableRowTemplate = $upldTableBody.find("template");
 
         $upldFiles.each(function(i, file) {
