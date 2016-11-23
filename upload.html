@@ -23,30 +23,29 @@
 		
 	</head>
 	<body>
-		<div class="uploader">
-			<table class="table table-striped">
+		<div class="uploader" data-upld-url="upload.php" data-upld-file="myFileName">
+			<table class="table table-striped" data-upld-section-root>
 				<thead>
 					<tr><th>File Name</th></tr>
 				</thead>
-				<tbody>
+				<tbody data-upld-section-body>
 					<template>
 						<tr>
 							<td>
 								<div class="input-group">
-									<span class="input-group-addon">
-										<span class="glyphicon glyphicon-chevron-up" data-upld-indicator></span>
-									</span>
-									<input type="text" class="form-control" aria-label="file-control" data-upld-filename>
+									<span class="input-group-addon">File</span>
+									<!-- Elements may have data-upld-file="identifier" for custom fields to upload along with file -->
+									<input type="text" class="form-control" aria-label="file-control" data-upld-field="name_of_file">
 									<div class="input-group-btn">
-										<button type="button" class="btn btn-warning" data-upld-dismiss><span class="glyphicon glyphicon-trash"></span></button>
+										<button type="button" class="btn btn-warning" data-upld-dismiss><span class="glyphicon glyphicon-remove"></span></button>
 									</div>
 								</div>
 							</td>
 						</tr>
 					</template>
-					<tr>
+					<tr data-upld-section-submit>
 						<td>
-							<button class="btn btn-success btn-block" data-upld-submit>
+							<button type="button" class="btn btn-success btn-block" data-upld-submit>
 								<span class="glyphicon glyphicon-upload pull-left"></span> Upload Files <span class="glyphicon glyphicon-upload pull-right"></span>
 							</button>
 						</td>

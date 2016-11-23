@@ -1,115 +1,141 @@
 /*
-uploader([ preprocessor ]) 
-	- preprocessor: A function called before sending the file.
-		> preprocessor([formData [, $nameTextBox [, $row ]]]) : Returns whether or not to reject a file.
+uploader([dropHandler [, preprocessor [, proprocessor]]]) 
+	- dropHandler: A function called upon dropping a file on the droppable area.
+		> dropHandler([file [, fields [, $upldSection [, $upldRoot]]]]) : Returns nothing.
+			- file: The file that was dropped on the droppable area.
+			- fields: Set of UI elements marked with data-upld-field="identifier", creating a key-value pair
+				which will be sent to the server, where "identifier" is the key, and element.val() is the value.
+			- $upldSection: A jQuery object holding the clone of the template for that specific file.
+			- $upldRoot: A jQuery object to which section elements are appended to.
+			
+	- preprocessor: A function called BEFORE sending the file and the operation begins.
+		> preprocessor([formData [, fields [, $upldSection ]]]) : Returns whether or not to reject a file.
 			- formData: The data to be sent, includes the key value pair to be sent
 				-> Key - File name (from textbox or file's original if none specified)
 				-> Value - File itself (includes original file name)
-			- $nameTextBox: A jQuery object holding the input textbox element for the file.
-			- $row: A jQuery object holding the entire row element for the file.
+			- fields: Set of UI elements marked with data-upld-field="identifier", creating a key-value pair
+				which will be sent to the server, where "identifier" is the key, and element.val() is the value.
+			- $upldSection: A jQuery object holding the clone of the template for that specific file.
+			
+	- proprocessor: A function called AFTER sending the file and the operation completed.
+		> proprocessor([success [, formData [, fields [, $upldSection ]]]]) : Returns whether or not to reject a file.
+			- success: A boolean value denoting whether or not the upload operation failed, relies on a json object
+				containing success as the reply from the server, everything else is considered failure.
+			- formData: The data to be sent, includes the key value pair to be sent
+				-> Key - File name (from textbox or file's original if none specified)
+				-> Value - File itself (includes original file name)
+			- fields: Set of UI elements marked with data-upld-field="identifier", creating a key-value pair
+				which will be sent to the server, where "identifier" is the key, and element.val() is the value.
+			- $upldSection: A jQuery object holding the clone of the template for that specific file.
 */
-jQuery.fn.uploader = function(preprocessor, proprocessor) {
-	var $upldTableRoot = $(this).find("table");
-	var $upldTableBody = $upldTableRoot.find("tbody");
-	var $upldTableSubmit = $upldTableBody.find("button[data-upld-submit]");
+jQuery.fn.uploader = function(dropHandler, preprocessor, proprocessor) {
+	var $upldRoot = $(this).find("[data-upld-section-root]");
+	var $upldBody = $upldRoot.find("[data-upld-section-body]");
+	var $upldSubmit = $upldRoot.find("[data-upld-section-submit]");
+	var $upldSubmitButton = $upldSubmit.find("[data-upld-submit]");
+	var $upldSectionTemplate = $upldBody.find("template");
 	
-	$upldTableRoot.bind("update", function(event) {
+	var UploadURL = $(this).attr("data-upld-url") || "upload.php";
+	var FileIdentifier = $(this).attr("data-upld-file") || "file";
+	
+	$upldRoot.bind("update", function(event) {
 		// Assume everything was sent, so we'll disable the upload button.
-		$upldTableSubmit.attr("disabled", true);
+		$upldSubmitButton.attr("disabled", true);
 		
-		// Look for at least one that wasn't sent, in which case, we enable the upload button.
-		$upldTableBody.children().each(function(i, row) {
-			if ($(row).data("file")) { 
-				$upldTableSubmit.attr("disabled", false);
+		// Remove disabled if we've got files ready.
+		$upldBody.children().each(function(i, upldSection) {
+			if ($(upldSection).data("file")) {
+				$upldSubmitButton.removeAttr("disabled");
 				return false;
 			}
 		});
 		
-		$upldTableRoot[($upldTableBody.find("tr").length - 1)? "fadeIn" : "fadeOut"]();
+		$upldRoot[($upldBody.find("tr").length - 1)? "fadeIn" : "fadeOut"]();
 	});
 
-	$upldTableSubmit.click(function(event) {
-		$upldTableBody.children().each(function(i, row) {
-			if (!$(row).data("file")) return; // If no file, skip.
+	$upldSubmitButton.click(function(event) {
+		$upldBody.children().each(function(i, upldSection) {
+			var $upldSection = $(upldSection); // Wrap in jQuery to prep for operations.
+			var upldSectionFile = $upldSection.data("file");
+
+			if (!upldSectionFile) return; // If no file, skip.
 			
-			var $upldTableRowIndicator = $(row).find("span[data-upld-indicator]");
-			var $upldTableRowDismiss = $(row).find("button[data-upld-dismiss]");
-			var $upldTableRowDismissIndicator = $upldTableRowDismiss.find("span.glyphicon");
-			var $upldTableRowFilename = $(row).find("input[data-upld-filename]");
-			
-			var $upldTableRowGroup = $upldTableRowFilename.closest("div.input-group");
-			
-			var file = $(row).data("file");
+			var UI = $upldSection.data("UI");
 			var formData = new FormData();
 			
-			formData.append("name", $upldTableRowFilename.val() || file.name);
-			formData.append("file", file);
+			formData.append(FileIdentifier, upldSectionFile);
+			
+			$(UI.fields).each(function(i, field) {
+				for (identifier in field) formData.append(identifier, $(field[identifier]).val());
+			});
 
-			if (!preprocessor || preprocessor(formData, $upldTableRowFilename, $upldTableRowGroup, $(row))) {
+			if (!preprocessor || preprocessor(formData, UI.fields, $upldSection)) {
 				$.post({
-					url: "upload.php",
+					url: UploadURL,
 					data: formData,
-					// cache: false, // Cache response? For JSON default is false
+					cache: false, // Cache response? For JSON default is false
 					processData: false,
 	                contentType: false,
-					success: function(data) {
-	 					$(row).data("file", null); // Clear the file
-	 					console.log(data);
+					success: function(data, status, jqHXR) {
+						var success = data instanceof Object && "success" in data;
+						UI.reflectSuccess(success);
+						if (success) $upldSection.data("file", null); // Clear file upon success.
+						if (proprocessor) proprocessor(success, formData, UI.fields, $upldSection);
 					},
-					error: function(event) {
-	 					console.log(event);
+					error: function(jqHXR, status, error) {
+	 					console.log("Failure (" + status + "): " + jqHXR.responseText);
+	 					UI.reflectSuccess(false);
+	 					if (proprocessor) proprocessor(false, formData, UI.fields, $upldSection);
 					},
-					complete: function(xhr, result) {
-						var success = result == "success";
-						$upldTableRowFilename.attr("disabled", success);
-						
-						$upldTableRowIndicator.removeClass("glyphicon-chevron-up glyphicon-repeat");
-						$upldTableRowDismissIndicator.removeClass("glyphicon-trash");
-						$upldTableRowDismiss.removeClass("btn-warning");
-						
-	 					$upldTableRowIndicator.addClass(success? "glyphicon-ok" : "glyphicon-repeat");
-	 					$upldTableRowDismissIndicator.addClass(success? "glyphicon-minus" : "glyphicon-trash");
-	 					$upldTableRowDismiss.addClass(success? "btn-info" : "btn-warning");
-						
-						if (proprocessor) proprocessor(success, formData, $upldTableRowFilename, $upldTableRowGroup, $(row));
-						
-						$upldTableRoot.trigger("update");
-					}
+					complete: function(jqHXR, status) {$upldRoot.trigger("update");}
 				});
 			} else {
-				$upldTableRowIndicator.removeClass("glyphicon-chevron-up").addClass("glyphicon-repeat");
-				if (proprocessor) proprocessor(false, formData, $upldTableRowFilename, $upldTableRowGroup, $(row));
+				UI.reflectSuccess(false);
+				if (proprocessor) proprocessor(false, formData, UI.fields, $upldSection);
 			}
 		});
-		return false; // Stop propagation
 	});
 	
-	$upldTableRoot.hide();
+	$upldRoot.hide();
 
 	$(this).on("dragover", false); // Stop propagation
 
 	$(this).on("drop", function(event) {
 		if(!event.originalEvent.dataTransfer.files.length) return;
-
-		var $upldFiles = $(event.originalEvent.dataTransfer.files);
-        var $upldTableRowTemplate = $upldTableBody.find("template");
-
-        $upldFiles.each(function(i, file) {
-			var $upldTableRow = $($upldTableRowTemplate.html()).hide();
+		
+		// For all files received, make a new group by using the template.
+        $(event.originalEvent.dataTransfer.files).each(function(i, file) {
+	        // Create clone, hide it and populate its file property to the current file.
+			var $upldSection = $($upldSectionTemplate.html()).hide().data("file", file);
 			
-			$upldTableRow.data("file", file);
-			$upldTableRow.find("input[data-upld-filename]").attr("placeholder", file.name);
-			
-			$upldTableRow.find("button[data-upld-dismiss]").click(function(event) {
-				$upldTableRow.remove();
-				$upldTableRoot.trigger("update");
+			$upldSection.data("UI", {
+				$buttonRemove: $upldSection.find("button[data-upld-dismiss]"),
+				fields: {}, // Custom fields will be stored here.
+				reflectSuccess: function(success) {
+					this.$buttonRemove.removeClass("btn-warning").addClass(success? "btn-info" : "btn-warning");
+				}
 			});
 			
-            $upldTableBody.prepend($upldTableRow);
-            $upldTableRow.fadeIn();
+			// Populate custom fields (with the data-upld-field) attribute.
+			// The attributes will be iterated over and sent with the file.
+			$upldSection.find("[data-upld-field]").each(function(i, field) {
+				var identifier = $(field).attr("data-upld-field") || i;
+				$upldSection.data("UI").fields[identifier] = field;
+			})
+			
+			$upldSection.data("UI").$buttonRemove.click(function(event) {
+				$upldSection.remove();
+				$upldRoot.trigger("update");
+			});
+			
+            $upldBody.prepend($upldSection);
+            
+            if (dropHandler) dropHandler(file, $upldSection.data("UI").fields, $upldSection, $upldRoot);
+            
+            $upldSection.fadeIn();
         });
         
-        $upldTableRoot.trigger("update");
+        $upldRoot.trigger("update");
         
         return false; // Stop propagation
 	});
@@ -118,9 +144,9 @@ jQuery.fn.uploader = function(preprocessor, proprocessor) {
 }
 
 $(function() {
-	$(".uploader").uploader(function(formData, $upldTableRowFilename, $upldTableRowGroup, $row) {
-		return $upldTableRowFilename.val(); // Make sure we've got a filename (just a demo)!
-	}, function(success, formData, $upldTableRowFilename, $upldTableRowGroup, $row) {
-		$upldTableRowGroup.removeClass("has-success has-warning").addClass(success? "has-success" : "has-warning");
+	$(".uploader").uploader(function(file, fields, $upldSection, $upldRoot) {
+		$(fields["name_of_file"]).val(file.name);
+	}, null, function(success, formData, fields, $upldSection) {
+		$upldSection.find("div.input-group").removeClass("has-success has-warning").addClass(success? "has-success" : "has-warning");
 	});
 });
